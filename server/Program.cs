@@ -1,7 +1,9 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 
 class Server
 {
@@ -16,37 +18,45 @@ class Server
         listener.Start();
         Console.WriteLine("Server started. Waiting for connections...");
 
-        while(true)
+        while (true)
         {
-        // Accept client connections
+            // Accept client connections
             TcpClient client = listener.AcceptTcpClient();
             Console.WriteLine("Client connected.");
 
+            // Start a new thread to handle the client
+            Thread clientThread = new Thread(() => HandleClient(client));
+            clientThread.Start();
+        }
+
+        // Close the listener
+        listener.Stop();
+    }
+
+    static void HandleClient(TcpClient client)
+    {
+        try
+        {
             // Get the network stream from the client
             NetworkStream stream = client.GetStream();
 
             // Read incoming messages
             byte[] buffer = new byte[1024];
             int bytesRead;
-            try
+            while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
             {
-                while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
-                {
-                    string message = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                    Console.WriteLine($"Message received: {message}");
-                }
+                string message = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                Console.WriteLine($"Message received: {message}");
             }
-            catch (IOException e)
-            {
-                Console.WriteLine(e.Message);
-                continue;
-            }
-
-
+        }
+        catch (IOException e)
+        {
+            Console.WriteLine(e.Message);
+        }
+        finally
+        {
+            // Close the client connection
             client.Close();
         }
-        // Close the connection
-        listener.Stop();
-            
     }
 }
