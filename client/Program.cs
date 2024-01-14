@@ -3,7 +3,7 @@ using System;
 using System.Net.Sockets;
 using System.Text;
 
-class Client
+class Client2
 {
     static void Main()
     {
