@@ -1,35 +1,75 @@
-﻿// See https://aka.ms/new-console-template for more information
-using System;
+﻿using System;
 using System.Net.Sockets;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 
-class Client2
+class Client
 {
-    static void Main()
-    {
-        string ipAddress = "127.0.0.1";
-        int port = 8080;
-
+    static void Main(string[] args)
+    {  
+        if(args.Length != 2) 
+            throw new Exception("Usage: dotnet run <IP> <PORT>");
+        Console.WriteLine("To Enter the server, type /join.");
+        string initialMessage = Console.ReadLine();
         TcpClient client = new TcpClient();
-        client.Connect(ipAddress, port);
-        Console.WriteLine("Connected to server.");
+        client.Connect(args[0], int.Parse(args[1])); // Connect to the server
 
         NetworkStream stream = client.GetStream();
 
-        while (true)
+        // Sending the initial message (join command or possibly something else and server will not accept us) to the server
+        byte[] initialMessageBytes = Encoding.ASCII.GetBytes(initialMessage);
+        stream.Write(initialMessageBytes, 0, initialMessageBytes.Length);
+
+        // Receive acknowledgment from the server
+        byte[] acknowledgmentBytes = new byte[1024];
+        int bytesRead = stream.Read(acknowledgmentBytes, 0, acknowledgmentBytes.Length);
+        string acknowledgment = Encoding.ASCII.GetString(acknowledgmentBytes, 0, bytesRead);
+        Console.WriteLine($"Server response: {acknowledgment}");
+
+        if (acknowledgment.Equals("OK", StringComparison.OrdinalIgnoreCase))
         {
-            // Read input from the user
-            Console.Write("Enter a message: ");
-            string message = Console.ReadLine();
+            // Send the name to the server
+            Console.WriteLine("Enter your name: ");
+            string name = Console.ReadLine();
 
-            // Convert the message to bytes
-            byte[] data = Encoding.ASCII.GetBytes(message);
+            // Sending the name to the server
+            byte[] nameBytes = Encoding.ASCII.GetBytes(name);
+            stream.Write(nameBytes, 0, nameBytes.Length);
 
-            // Send the message to the server
-            stream.Write(data, 0, data.Length);
-            Console.WriteLine("Message sent: " + message);
+            // Keep the connection open for further interaction
+            while (true)
+            {
+                Console.WriteLine("Enter /get-list for name list or /leave to disconnect :)");
+                string message = Console.ReadLine();
+
+                // Sending the message to the server
+                byte[] messageBytes = Encoding.ASCII.GetBytes(message);
+                stream.Write(messageBytes, 0, messageBytes.Length);
+
+                if (message.StartsWith("/leave", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Left the server :)");
+                    break;
+                }
+                else if (message.StartsWith("/get-list", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Receive the list of connected clients from the server
+                    byte[] responseBytes = new byte[1024];
+                    int responseLength = stream.Read(responseBytes, 0, responseBytes.Length);
+                    string clientList = Encoding.ASCII.GetString(responseBytes, 0, responseLength);
+                    Console.WriteLine($"Connected clients: {clientList}");
+                }
+                else{
+                    
+                }
+
+                // You can handle other server responses here if needed
+            }
         }
 
-        client.Close();
+        // Note: The connection will be closed after the user types '/leave'
+        // Closing the connection is not necessary here, as the client will keep it open until '/leave'
+        // stream.Close();
+        // client.Close();
     }
 }
