@@ -2,7 +2,7 @@
 rm -rf build
 dotnet build ../server -o build
 kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3)
-./build/server.exe &
+./build/server &
 PID_SERVER=$!
 rm -f c1.txt; touch c1.txt;
 rm -f c2.txt; touch c2.txt;
@@ -13,41 +13,43 @@ PID_C1=$!
 tail -f c2.txt | ncat.exe -v localhost 8080 > out_c2.txt &
 PID_C2=$!
 
-sleep 5;
+sleep 5; # first ncat takes a while for some reason
 
 echo "-- clients connected hopefully"
 
-function echo_sleep {
-    echo $1 >> $2
-    sleep 1
+function cleanup_pids {
+    kill $PID_C1 $PID_C2 $PID_SERVER;
+    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3)
 }
 
 function test_or_die {
-    test $(cat $1 | wc -l) == "$3" || ( echo $4; kill $PID_C1 $PID_C2 $PID_SERVER; kill $$ )
-    test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; kill $PID_C1 $PID_C2 $PID_SERVER; kill $$ )
+    sleep 1.2; # TODO: read from $1 until number of lines increase by 1
+    test "$(cat $1 | wc -l)" == "$3" || ( echo $4; cleanup_pids; kill $$ )
+    test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; cleanup_pids; kill $$ )
 }
 
-echo_sleep "/join" c1.txt
+echo "/join" >> c1.txt
 test_or_die out_c1.txt OK 1 "failed after c1 join"
 
-echo_sleep "/join" c2.txt
+echo "/join" >> c2.txt
 test_or_die out_c2.txt OK 1 "failed after c2 join"
 
-echo_sleep "marianela" c1.txt
+echo "marianela" >> c1.txt
 test_or_die out_c1.txt OK 2 "failed after c1 name"
 
-echo_sleep "gigel" c2.txt
+echo "gigel" >> c2.txt
 test_or_die out_c2.txt OK 2 "failed after c2 name"
 
-echo_sleep "/get-list" c1.txt
+echo "/get-list" >> c1.txt
 test_or_die out_c1.txt "marianela, gigel" 3 "failed after 1st get-list"
 
-echo_sleep "/leave" c2.txt
+echo "/leave" >> c2.txt
+sleep 1
 
-echo_sleep "/get-list" c1.txt
-test_or_die out_c1.txt "marianela" 4 "failed after 1st get-list"
+echo "/get-list" >> c1.txt
+test_or_die out_c1.txt "marianela" 4 "failed after 2nd get-list"
 
-echo_sleep "/leave" c1.txt
+echo "/leave" >> c1.txt
 
 echo "-- killing clients and server"
-kill $PID_C1 $PID_C2 $PID_SERVER
+cleanup_pids
