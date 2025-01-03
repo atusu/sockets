@@ -6,13 +6,21 @@ using System.Text;
 class Client
 {
     static void Main(string[] args)
-    {  
-        if(args.Length != 2) 
+    {
+        if(args.Length != 2)
             throw new Exception("Usage: dotnet run <IP> <PORT>");
         Console.WriteLine("To Enter the server, type /join.");
         string initialMessage = Console.ReadLine();
         TcpClient client = new TcpClient();
-        client.Connect(args[0], int.Parse(args[1])); // Connect to the server
+
+        try{
+            client.Connect(args[0], int.Parse(args[1])); // Connect to the server
+        }
+        catch
+        {
+            Console.WriteLine("Error: Couldn't connect to the server. It probably isn't on. :)");
+            return;
+        }
 
         NetworkStream stream = client.GetStream();
 
@@ -60,16 +68,13 @@ class Client
                     Console.WriteLine($"Connected clients: {clientList}");
                 }
                 else{
-                    
+                    Console.WriteLine("Command not recognized. Please try again!");
                 }
 
                 // You can handle other server responses here if needed
             }
-        }
+        }else{
 
-        // Note: The connection will be closed after the user types '/leave'
-        // Closing the connection is not necessary here, as the client will keep it open until '/leave'
-        // stream.Close();
-        // client.Close();
+        }
     }
 }
