@@ -1,7 +1,8 @@
 #!/usr/bin/bash
+set -e
 rm -rf build
 dotnet build ../server -o build
-kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3)
+kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3) || echo "no server to kill"
 ./build/server &
 PID_SERVER=$!
 rm -f c1.txt; touch c1.txt;
