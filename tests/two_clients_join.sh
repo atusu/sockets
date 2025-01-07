@@ -24,9 +24,9 @@ function cleanup_pids {
 }
 
 function test_or_die {
-    sleep 2; # TODO: read from $1 until number of lines increase by 1
-    test "$(cat $1 | wc -l)" == "$3" || ( echo $4; cleanup_pids; kill $$ )
-    test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; cleanup_pids; kill $$ )
+    sleep 1.2; # TODO: read from $1 until number of lines increase by 1
+    test "$(cat $1 | wc -l)" == "$3" || ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
+    test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
 }
 
 echo "/join" >> c1.txt
