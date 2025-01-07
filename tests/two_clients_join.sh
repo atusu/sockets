@@ -34,7 +34,7 @@ function wait_n_lines {
         else
             break
         fi
-        if [ $n_tries == "1000"]; then
+        if [ $n_tries == "1000" ]; then # stop after ~10s of waiting
             break
         fi
     done
