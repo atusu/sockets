@@ -62,7 +62,7 @@ echo "/get-list" >> c1.txt
 wait_n_lines out_c1.txt 3
 test "$(cat out_c1.txt | tail -n 1)" == "marianela, gigel" || \
     test "$(cat out_c1.txt | tail -n 1)" == "gigel, marianela" || \
-    ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
+    ( echo $4; echo "in file:"; cat out_c1.txt; cleanup_pids; kill $$ )
 
 echo "/leave" >> c2.txt
 sleep 1
