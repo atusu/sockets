@@ -19,8 +19,8 @@ sleep 5; # first ncat takes a while for some reason
 echo "-- clients connected hopefully"
 
 function cleanup_pids {
-    kill $PID_C1 $PID_C2 $PID_SERVER;
-    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3)
+    kill $PID_C1 $PID_C2 $PID_SERVER || echo "no such process"
+    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) || echo "no such process"
 }
 
 function test_or_die {
