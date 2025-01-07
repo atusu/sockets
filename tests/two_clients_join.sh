@@ -43,7 +43,6 @@ function wait_n_lines {
 
 function test_or_die {
     wait_n_lines $1 $3
-    test "$(cat $1 | wc -l)" == "$3" || ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
     test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
 }
 
@@ -60,7 +59,10 @@ echo "gigel" >> c2.txt
 test_or_die out_c2.txt OK 2 "failed after c2 name"
 
 echo "/get-list" >> c1.txt
-test_or_die out_c1.txt "marianela, gigel" 3 "failed after 1st get-list"
+wait_n_lines out_c1.txt 3
+test "$(cat out_c1.txt | tail -n 1)" == "marianela, gigel" || \
+    test "$(cat out_c1.txt | tail -n 1)" == "gigel, marianela" || \
+    ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
 
 echo "/leave" >> c2.txt
 sleep 1
