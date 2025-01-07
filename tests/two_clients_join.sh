@@ -14,7 +14,7 @@ PID_C1=$!
 tail -f c2.txt | ncat -v localhost 8080 > out_c2.txt &
 PID_C2=$!
 
-sleep 5; # first ncat takes a while for some reason
+sleep 3; # first ncat takes a while for some reason
 
 echo "-- clients connected hopefully"
 
