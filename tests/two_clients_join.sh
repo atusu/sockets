@@ -19,12 +19,30 @@ sleep 5; # first ncat takes a while for some reason
 echo "-- clients connected hopefully"
 
 function cleanup_pids {
-    kill $PID_C1 $PID_C2 $PID_SERVER || echo "no such process"
+    kill $PID_C1 $PID_C2 $PID_SERVER
     kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) || echo "no such process"
 }
 
+function wait_n_lines {
+    n_tries=0
+    while true; do
+        n_lines=$(cat $1 | wc -l)
+        n_tries=$((n_tries+1))
+        if [ $n_lines -lt "$2" ]; then
+            sleep 0.01
+            continue
+        else
+            break
+        fi
+        if [ $n_tries == "1000"]; then
+            break
+        fi
+    done
+    echo "waited $n_tries tries"
+}
+
 function test_or_die {
-    sleep 1.2; # TODO: read from $1 until number of lines increase by 1
+    wait_n_lines $1 $3
     test "$(cat $1 | wc -l)" == "$3" || ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
     test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
 }
