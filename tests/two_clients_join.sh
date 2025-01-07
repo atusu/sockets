@@ -8,10 +8,10 @@ PID_SERVER=$!
 rm -f c1.txt; touch c1.txt;
 rm -f c2.txt; touch c2.txt;
 
-tail -f c1.txt | ncat.exe -v localhost 8080 > out_c1.txt &
+tail -f c1.txt | ncat -v localhost 8080 > out_c1.txt &
 PID_C1=$!
 
-tail -f c2.txt | ncat.exe -v localhost 8080 > out_c2.txt &
+tail -f c2.txt | ncat -v localhost 8080 > out_c2.txt &
 PID_C2=$!
 
 sleep 5; # first ncat takes a while for some reason
