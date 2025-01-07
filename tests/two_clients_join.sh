@@ -19,12 +19,12 @@ sleep 5; # first ncat takes a while for some reason
 echo "-- clients connected hopefully"
 
 function cleanup_pids {
-    kill $PID_C1 $PID_C2 $PID_SERVER
-    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3)
+    kill $PID_C1 $PID_C2 $PID_SERVER || echo "no such process"
+    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) || echo "no such process"
 }
 
 function test_or_die {
-    sleep 1.2; # TODO: read from $1 until number of lines increase by 1
+    sleep 2; # TODO: read from $1 until number of lines increase by 1
     test "$(cat $1 | wc -l)" == "$3" || ( echo $4; cleanup_pids; kill $$ )
     test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; cleanup_pids; kill $$ )
 }
@@ -53,4 +53,4 @@ test_or_die out_c1.txt "marianela" 4 "failed after 2nd get-list"
 echo "/leave" >> c1.txt
 
 echo "-- killing clients and server"
-cleanup_pids || exit 0
+cleanup_pids
