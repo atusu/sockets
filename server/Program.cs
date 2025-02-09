@@ -44,6 +44,8 @@ public class Server
     }
 
     private static void SendToClient(NetworkStream stream, string message) {
+        // the \n here is needed fot the nc test so we get the message on a new line always
+        message = message[message.Count()-1].ToString() == "\n" ? message : message + "\n";
         var responseBytes = Encoding.ASCII.GetBytes(message);
         stream.Write(responseBytes, 0, responseBytes.Length);
     }
@@ -62,9 +64,11 @@ public class Server
         }
 
         NetworkStream stream = client.TcpClient.GetStream();
-        Console.WriteLine("Handling: " + client.Name);
 
         string message = Receive(stream);
+        // some clients end a \n as well, like for example the netcat client (integration test). We trim it.
+        message = message[message.Count()-1].ToString() == "\n" ? message.Substring(0, message.Count()-1) : message;
+        Console.WriteLine($"Handling client message: {message}");
         client.CommandHistory.Add(message);
 
         if(client.ClientState == ClientState.INIT) {
@@ -91,6 +95,7 @@ public class Server
         if(client.ClientState == ClientState.CONNECTED){
             if (message == "/leave") {
                 client.TcpClient.Close();
+                clients.RemoveAll(c => c.Name == client.Name);
                 Console.WriteLine("Client disconnected: " + client.Name);
                 return;
             }
