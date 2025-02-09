@@ -109,6 +109,11 @@ public class Server
 
     public static bool ClientAlreadyExists(List<ClientData> clients, string name)
     {
-        return clients.Select(c => c.Name == name).First();
+        foreach (var client in clients) {
+            if (client.Name == name) {
+                return true;
+            }
+        }
+        return false;
     }
 }
