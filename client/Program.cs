@@ -10,6 +10,19 @@ class Client
         byte[] messageBytes = Encoding.ASCII.GetBytes(message);
         stream.Write(messageBytes, 0, messageBytes.Length);
     }
+
+    private static string Receive(NetworkStream stream) {
+        byte[] acknowledgmentBytes = new byte[1024];
+        int bytesRead = stream.Read(acknowledgmentBytes, 0, acknowledgmentBytes.Length);
+        string acknowledgment = Encoding.ASCII.GetString(acknowledgmentBytes, 0, bytesRead);
+        return acknowledgment;
+    }
+
+    private static string SendAndReceive(NetworkStream stream) {
+        ReadAndSend(stream);
+        return Receive(stream);
+    }
+
     static void Main(string[] args)
     {
         if(args.Length != 2)
@@ -27,9 +40,29 @@ class Client
         }
 
         NetworkStream stream = client.GetStream();
-        while (true) {
-            ReadAndSend(stream);
+        Console.WriteLine("To Enter the server, type /join.");
+        string received;
+
+        // here we try to join the server until we are allowed in.
+        while ((received = SendAndReceive(stream)) != "OK") {
+            Console.WriteLine($"Server response: {received}");
         }
+
+        Console.WriteLine("We have joined. We need to send the server our name.");
+        received = SendAndReceive(stream);
+        // todo, do a while true with /join and name in case the server doesn't allow us in because it's full or bad name.
+        if (received != "OK") {
+            Console.WriteLine("Server didn't allow us in.");
+            return;
+        }
+        Console.WriteLine("We are connected.");
+
+        while(true) {
+            received = SendAndReceive(stream);
+            Console.WriteLine($"Received {received}");
+        }
+
+        // if we arive here, we are in and the server knows our name
 
         // // Sending the initial message (join command or possibly something else and server will not accept us) to the server
         // Console.WriteLine("To Enter the server, type /join.");

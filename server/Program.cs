@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using server;
 
@@ -45,19 +46,55 @@ public class Server
         }
     }
 
+    private static void SendToClient(NetworkStream stream, string message) {
+        var responseBytes = Encoding.ASCII.GetBytes(message);
+        stream.Write(responseBytes, 0, responseBytes.Length);
+    }
+
+    private static string Receive(NetworkStream stream) {
+        byte[] acknowledgmentBytes = new byte[1024];
+        int bytesRead = stream.Read(acknowledgmentBytes, 0, acknowledgmentBytes.Length);
+        string acknowledgment = Encoding.ASCII.GetString(acknowledgmentBytes, 0, bytesRead);
+        return acknowledgment;
+    }
 
     public static void HandleClient(ClientData client) {
         NetworkStream stream = client.TcpClient.GetStream();
-
         Console.WriteLine("Handling: " + client.Name);
 
-        byte[] buffer = new byte[1024];
-        int bytesRead;
+        string message = Receive(stream);
+        client.CommandHistory.Add(message);
 
-        bytesRead = stream.Read(buffer, 0, buffer.Length);
-        string message = Encoding.ASCII.GetString(buffer, 0, bytesRead).Trim();
+        if(client.ClientState == ClientState.INIT) {
+            SendToClient(stream, message == "/join" ? "OK" : "ERR");
+            if (message == "/join") {
+                client.ClientState = ClientState.JOINED;
+            }
+            return;
+        }
 
-        Console.WriteLine($"Received message: {message}");
+        if(client.ClientState == ClientState.JOINED) {
+            if (ClientAlreadyExists(clients, message)) {
+                SendToClient(stream, "ERR: name is already on server");
+            }
+            else {
+                Console.WriteLine($"Client {message} is now connected to the server.");
+                client.Name = message;
+                SendToClient(stream, "OK");
+            }
+            return;
+        }
+
+        client.ClientState = ClientState.CONNECTED;
+        SendToClient(stream, "OK and you are connected and fine.");
+
+        // Console.WriteLine($"Received message: {message}");
+        // if (message == "gogu") {
+        //     SendToClient(stream, "OK");
+        // }
+        // else{
+        //     SendToClient(stream, "hello");
+        // }
 
         // byte[] responseBytes;
         // if(IsNewConnection(clientData)){
@@ -118,17 +155,8 @@ public class Server
         // }
     }
 
-    public static bool UserHasJoinedButHasNoName(ClientData clientData){
-        if(clientData.CommandHistory.Count == 1)
-            return true;
-
-        return false;
-    }
-
-    public static bool ClientAlreadyExists(List<ClientData> clients, ClientData clientData){
-        if(clients.Select(c => c.Name == clientData.Name).First())
-            return true;
-
-        return false;
+    public static bool ClientAlreadyExists(List<ClientData> clients, string name)
+    {
+        return clients.Select(c => c.Name == name).First();
     }
 }

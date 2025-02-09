@@ -2,11 +2,19 @@ using System.Dynamic;
 using System.Net.Sockets;
 namespace server;
 
+public enum ClientState {
+    INIT,
+    JOINED,
+    CONNECTED
+}
+
 public class ClientData
 {
     public required TcpClient TcpClient { get; set; }
     public string? Name { get; set; }
     public List<string> CommandHistory { get; set; } = new List<string>();
+
+    public ClientState ClientState { get; set; } = ClientState.INIT;
 
     public bool IsConnected()
     {
