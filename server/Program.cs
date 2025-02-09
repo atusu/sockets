@@ -1,18 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+using System.Data;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
+using System.Runtime.InteropServices;
 using System.Text;
-
-public class ClientData
-{
-    public TcpClient TcpClient { get; set; }
-    public NetworkStream NetworkStream { get; set; }
-    public string Name { get; set; }
-    public List<string> CommandHistory {get; set;}
-}
+using server;
 
 public class Server
 {
@@ -23,147 +14,111 @@ public class Server
         TcpListener server = new TcpListener(IPAddress.Any, 8080);
         server.Start();
 
-        Console.WriteLine("Server started. Waiting for clients...");
+        Console.WriteLine("Server started.");
 
         while (true)
         {
-            while (server.Pending())
+            DateTime start = DateTime.Now;
+            Console.WriteLine("Waiting for clients...");
+            while ((DateTime.Now - start).TotalMilliseconds < 1000)
             {
-                TcpClient newClient = server.AcceptTcpClient();
-
-                // Create a new instance of the ClientData class for the new client
-                ClientData newClientData = new ClientData
-                {
-                    TcpClient = newClient,
-                    NetworkStream = newClient.GetStream(),
-                    Name = string.Empty,
-                    CommandHistory = new List<string>()
-                };
-
-                // Add the new client to the list
-                clients.Add(newClientData);
-
-                // Handle the new client in a separate thread or using async/await
-                ThreadPool.QueueUserWorkItem(HandleClient, newClientData);
-            }
-
-
-            // Check for incoming messages from existing clients
-            foreach (ClientData clientData in clients)
-            {
-                if (clientData.NetworkStream.DataAvailable)
-                {
-                    // Handle incoming messages for existing clients
-                    ThreadPool.QueueUserWorkItem(HandleClient, clientData);
+                if (server.Pending()) {
+                    clients.Add(new ClientData{
+                        TcpClient = server.AcceptTcpClient(),
+                    });
+                    Console.WriteLine("Added new client :)");
                 }
-                // TODO: check if clients disconnected and remove it from the list of clients.
             }
 
-            // You can add a delay to reduce CPU usage
-            Thread.Sleep(100);
+            Console.WriteLine($"Checking existing clients... (Total: {clients.Count()})");
+            for(var i=0 ; i < clients.Count(); i++)
+            {
+                if(!clients[i].IsConnected()) {
+                    clients.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+                HandleClient(clients[i]);
+            }
         }
-
     }
 
-    static void HandleClient(object state)
+    private static void SendToClient(NetworkStream stream, string message) {
+        // the \n here is needed fot the nc test so we get the message on a new line always
+        message = message[message.Count()-1].ToString() == "\n" ? message : message + "\n";
+        var responseBytes = Encoding.ASCII.GetBytes(message);
+        stream.Write(responseBytes, 0, responseBytes.Length);
+    }
+
+    private static string Receive(NetworkStream stream) {
+        byte[] acknowledgmentBytes = new byte[1024];
+        int bytesRead = stream.Read(acknowledgmentBytes, 0, acknowledgmentBytes.Length);
+        string acknowledgment = Encoding.ASCII.GetString(acknowledgmentBytes, 0, bytesRead);
+        return acknowledgment;
+    }
+
+    public static void HandleClient(ClientData client)
     {
-        if (state is ClientData clientData)
-        {
-            TcpClient tcpClient = clientData.TcpClient;
-            NetworkStream stream = clientData.NetworkStream;
+        if (!client.TcpClient.GetStream().DataAvailable) {
+            return;
+        }
 
-            Console.WriteLine("Handling: " + clientData.Name);
+        NetworkStream stream = client.TcpClient.GetStream();
 
-            byte[] buffer = new byte[1024];
-            int bytesRead;
+        string message = Receive(stream);
+        // some clients end a \n as well, like for example the netcat client (integration test). We trim it.
+        message = message[message.Count()-1].ToString() == "\n" ? message.Substring(0, message.Count()-1) : message;
+        Console.WriteLine($"Handling client message: {message}");
+        client.CommandHistory.Add(message);
 
-            try
-            {
-                // Wait for the initial message from the client
-                bytesRead = stream.Read(buffer, 0, buffer.Length);
-                string message = Encoding.ASCII.GetString(buffer, 0, bytesRead).Trim();
-
-                Console.WriteLine($"Received message: {message}");
-
-                //If empty command history, we check for valid join command
-                if(clientData.CommandHistory.Count == 0)
-                {
-                    //Check command for new client
-                    if(message == "/join")
-                    {
-                        Console.WriteLine("Client wants to join our server - asking for name");
-
-                        // Respond with acknowledgment (you can add more logic here)
-                        byte[] responseBytes = Encoding.ASCII.GetBytes("OK\n");
-                        stream.Write(responseBytes, 0, responseBytes.Length);
-                        //Add command to client history
-                        clientData.CommandHistory.Add(message);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Unrecognized command received: {message}");
-                        string response = "Cannot join the server - please check command :)\n";
-                        byte[] responseBytes = Encoding.ASCII.GetBytes(response);
-                        stream.Write(responseBytes, 0, responseBytes.Length);
-                    }
-                }
-                else if(clientData.CommandHistory.Count == 1)
-                {
-                    // var clientExists = clients.Select(c => c.Name == clientData.Name).First();
-                    // if(clientExists){
-                    //     //Respond with an error message
-                    //     byte[] responseBytes = Encoding.ASCII.GetBytes("Client with this name already exists");
-                    //     stream.Write(responseBytes, 0, responseBytes.Length);
-                    //     Console.WriteLine("Client with this name already exists");
-                    //     return;
-                    // }
-
-                    byte[] responseBytes = Encoding.ASCII.GetBytes("OK\n");
-                    stream.Write(responseBytes, 0, responseBytes.Length);
-
-                    Console.WriteLine($"Name received: {message}");
-                    //Save client name
-                    clientData.Name = message;
-                    //Save command in history
-                    clientData.CommandHistory.Add("Name received: " + clientData.Name);
-                }
-                else
-                {
-                    if(message == "/leave")
-                    {
-                        //remove client from list according to command
-                        clients.RemoveAll(c => c.Name == clientData.Name); // TODO: client is guaranteed to have unique name
-                        tcpClient.Close();
-                        Console.WriteLine("Client disconnected.");
-                        foreach (var client in clients)
-                            Console.WriteLine(client.Name);
-
-                    }
-                    else if(message == "/get-list")
-                    {
-                        //Respond with the list of connected client names
-                        string clientList = string.Join(", ", clients.Select(client => client.Name));
-                        byte[] responseBytes = Encoding.ASCII.GetBytes(clientList + "\n");
-                        stream.Write(responseBytes, 0, responseBytes.Length);
-                        Console.WriteLine("The list was sent to the client.");
-                    }
-                    else
-                    {
-                        //Respond with an error message to other commands
-                        byte[] responseBytes = Encoding.ASCII.GetBytes("Invalid command\n");
-                        stream.Write(responseBytes, 0, responseBytes.Length);
-                        Console.WriteLine("Client sent an invalid command");
-                    }
-                }
+        if(client.ClientState == ClientState.INIT) {
+            SendToClient(stream, message == "/join" ? "OK" : "ERR: you cannot join server using this command.");
+            if (message == "/join") {
+                client.ClientState = ClientState.JOINED;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-            }
-            finally
-            {
+            return;
+        }
 
+        if(client.ClientState == ClientState.JOINED) {
+            if (ClientAlreadyExists(clients, message)) {
+                SendToClient(stream, "ERR: name is already on server");
+                return;
+            }
+
+            Console.WriteLine($"Client {message} is now connected to the server.");
+            client.Name = message;
+            client.ClientState = ClientState.CONNECTED;
+            SendToClient(stream, "OK");
+            return;
+        }
+
+        if(client.ClientState == ClientState.CONNECTED){
+            if (message == "/leave") {
+                client.TcpClient.Close();
+                clients.RemoveAll(c => c.Name == client.Name);
+                Console.WriteLine("Client disconnected: " + client.Name);
+                return;
+            }
+
+            if(message == "/get-list") {
+                string clientList = string.Join(", ", clients.Select(client => client.Name)) + "\n";
+                SendToClient(stream, clientList);
+                Console.WriteLine("The list was sent to the client.");
+                return;
+            }
+
+            SendToClient(stream, "Invalid command, please check spelling!");
+            return;
+        }
+    }
+
+    public static bool ClientAlreadyExists(List<ClientData> clients, string name)
+    {
+        foreach (var client in clients) {
+            if (client.Name == name) {
+                return true;
             }
         }
+        return false;
     }
 }
