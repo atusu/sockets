@@ -7,6 +7,7 @@ kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3) || echo "
 PID_SERVER=$!
 rm -f c1.txt; touch c1.txt;
 rm -f c2.txt; touch c2.txt;
+sleep 1; # wait for server to start
 
 tail -f c1.txt | ncat -v localhost 8080 > out_c1.txt &
 PID_C1=$!
