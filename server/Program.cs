@@ -1,3 +1,4 @@
+using System.Data;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -37,11 +38,7 @@ public class Server
                     i--;
                     continue;
                 }
-                if (clients[i].TcpClient.GetStream().DataAvailable)
-                {
-                    Console.WriteLine("Data Available for client: " + i);
-                    HandleClient(clients[i]);
-                }
+                HandleClient(clients[i]);
             }
         }
     }
@@ -58,7 +55,12 @@ public class Server
         return acknowledgment;
     }
 
-    public static void HandleClient(ClientData client) {
+    public static void HandleClient(ClientData client)
+    {
+        if (!client.TcpClient.GetStream().DataAvailable) {
+            return;
+        }
+
         NetworkStream stream = client.TcpClient.GetStream();
         Console.WriteLine("Handling: " + client.Name);
 
@@ -66,7 +68,7 @@ public class Server
         client.CommandHistory.Add(message);
 
         if(client.ClientState == ClientState.INIT) {
-            SendToClient(stream, message == "/join" ? "OK" : "ERR");
+            SendToClient(stream, message == "/join" ? "OK" : "ERR: you cannot join server using this command.");
             if (message == "/join") {
                 client.ClientState = ClientState.JOINED;
             }
@@ -76,83 +78,33 @@ public class Server
         if(client.ClientState == ClientState.JOINED) {
             if (ClientAlreadyExists(clients, message)) {
                 SendToClient(stream, "ERR: name is already on server");
+                return;
             }
-            else {
-                Console.WriteLine($"Client {message} is now connected to the server.");
-                client.Name = message;
-                SendToClient(stream, "OK");
-            }
+
+            Console.WriteLine($"Client {message} is now connected to the server.");
+            client.Name = message;
+            client.ClientState = ClientState.CONNECTED;
+            SendToClient(stream, "OK");
             return;
         }
 
-        client.ClientState = ClientState.CONNECTED;
-        SendToClient(stream, "OK and you are connected and fine.");
+        if(client.ClientState == ClientState.CONNECTED){
+            if (message == "/leave") {
+                client.TcpClient.Close();
+                Console.WriteLine("Client disconnected: " + client.Name);
+                return;
+            }
 
-        // Console.WriteLine($"Received message: {message}");
-        // if (message == "gogu") {
-        //     SendToClient(stream, "OK");
-        // }
-        // else{
-        //     SendToClient(stream, "hello");
-        // }
+            if(message == "/get-list") {
+                string clientList = string.Join(", ", clients.Select(client => client.Name)) + "\n";
+                SendToClient(stream, clientList);
+                Console.WriteLine("The list was sent to the client.");
+                return;
+            }
 
-        // byte[] responseBytes;
-        // if(IsNewConnection(clientData)){
-        //     if(message != "/join"){
-        //         Console.WriteLine($"Unrecognized command received before user authentication: {message}");
-        //         string response = "Cannot join the server - please check command :)\n";
-        //         responseBytes = Encoding.ASCII.GetBytes(response);
-        //         stream.Write(responseBytes, 0, responseBytes.Length);
-        //         return;
-        //     }
-
-        //     Console.WriteLine("Client wants to join our server - asking for name");
-        //     responseBytes = Encoding.ASCII.GetBytes("OK\n");
-        //     stream.Write(responseBytes, 0, responseBytes.Length);
-        //     clientData.CommandHistory.Add(message);
-        //     return;
-        // }
-        // else if(UserHasJoinedButHasNoName(clientData))
-        // {
-        //     if(ClientAlreadyExists(clients, clientData)){
-        //         responseBytes = Encoding.ASCII.GetBytes("Client with this name already exists");
-        //         stream.Write(responseBytes, 0, responseBytes.Length);
-        //         Console.WriteLine("Client with this name already exists");
-        //         return;
-        //     }
-
-        //     responseBytes = Encoding.ASCII.GetBytes("OK\n");
-        //     stream.Write(responseBytes, 0, responseBytes.Length);
-
-        //     Console.WriteLine($"Name received: {message}");
-
-        //     clientData.Name = message;
-        //     clientData.CommandHistory.Add("Name received: " + clientData.Name);
-        //     return;
-        // }
-        // else
-        // {
-        //     if(message == "/leave"){
-        //         clients.RemoveAll(c => c.Name == clientData.Name);
-        //         tcpClient.Close();
-        //         Console.WriteLine("Client disconnected: " + clientData.Name);
-        //         return;
-        //     }
-
-        //     if(message == "/get-list"){
-        //         string clientList = string.Join(", ", clients.Select(client => client.Name));
-        //         responseBytes = Encoding.ASCII.GetBytes(clientList + "\n");
-        //         stream.Write(responseBytes, 0, responseBytes.Length);
-        //         Console.WriteLine("The list was sent to the client.");
-        //         return;
-        //     }
-
-        //     //Respond with an error message to other commands
-        //     responseBytes = Encoding.ASCII.GetBytes("Invalid command\n");
-        //     stream.Write(responseBytes, 0, responseBytes.Length);
-        //     Console.WriteLine("Client sent an invalid command");
-        //     return;
-        // }
+            SendToClient(stream, "Invalid command, please check spelling!");
+            return;
+        }
     }
 
     public static bool ClientAlreadyExists(List<ClientData> clients, string name)
