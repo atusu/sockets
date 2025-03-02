@@ -20,7 +20,12 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+
     - name: Install ncat
       run: sudo apt-get update && sudo apt-get install -y ncat
-    - name: Testing the happy path :)
+
+    - name: End to end bash test
       run: cd tests/end-to-end/bash; bash two_clients_join.sh
+
+    - name: Dotnet tests
+      run: cd tests/Server.Tests; dotnet test
