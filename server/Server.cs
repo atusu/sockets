@@ -4,16 +4,16 @@ using System.Text;
 using server;
 
 public class Server{
-    public List<ClientData> _clients {get; set;}
-    public int _port {get;set;}
+    public List<ClientData> clients {get; set;}
+    public int port {get;set;}
 
     public Server(int port){
-        _port = port;
-        _clients = new List<ClientData>();
+        this.port = port;
+        clients = new List<ClientData>();
     }
 
     public void ServerInit(){
-        TcpListener server = new TcpListener(IPAddress.Any, _port);
+        TcpListener server = new TcpListener(IPAddress.Any, port);
         server.Start();
 
         Console.WriteLine("Server started.");
@@ -25,22 +25,22 @@ public class Server{
             while ((DateTime.Now - start).TotalMilliseconds < 1000)
             {
                 if (server.Pending()) {
-                    _clients.Add(new ClientData{
+                    clients.Add(new ClientData{
                         TcpClient = server.AcceptTcpClient(),
                     });
                     Console.WriteLine("Added new client :)");
                 }
             }
 
-            Console.WriteLine($"Checking existing clients... (Total: {_clients.Count()})");
-            for(var i=0 ; i < _clients.Count(); i++)
+            Console.WriteLine($"Checking existing clients... (Total: {clients.Count()})");
+            for(var i=0 ; i < clients.Count(); i++)
             {
-                if(!_clients[i].IsConnected()) {
-                    _clients.RemoveAt(i);
+                if(!clients[i].IsConnected()) {
+                    clients.RemoveAt(i);
                     i--;
                     continue;
                 }
-                HandleClient(_clients[i]);
+                HandleClient(clients[i]);
             }
         }
     }
@@ -93,7 +93,7 @@ public class Server{
         }
 
         if(client.ClientState == ClientState.JOINED) {
-            if (ClientAlreadyExists(_clients, message)) {
+            if (ClientAlreadyExists(clients, message)) {
                 SendToClient(stream, "ERR: name is already on server");
                 return;
             }
@@ -108,13 +108,13 @@ public class Server{
         if(client.ClientState == ClientState.CONNECTED){
             if (message == "/leave") {
                 client.TcpClient.Close();
-                _clients.RemoveAll(c => c.Name == client.Name);
+                clients.RemoveAll(c => c.Name == client.Name);
                 Console.WriteLine("Client disconnected: " + client.Name);
                 return;
             }
 
             if(message == "/get-list") {
-                string clientList = string.Join(", ", _clients.Select(client => client.Name)) + "\n";
+                string clientList = string.Join(", ", clients.Select(client => client.Name)) + "\n";
                 SendToClient(stream, clientList);
                 Console.WriteLine("The list was sent to the client.");
                 return;
