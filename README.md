@@ -5,7 +5,7 @@
 ### Bash end to end test
 For Windows use Git Bash
 ```bash
-cd [path]/Sockets/tests
+cd [path]/Sockets/tests/end-to-end/bash
 bash two_clients_join.sh
 ```
 

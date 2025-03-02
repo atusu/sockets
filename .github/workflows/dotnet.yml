@@ -23,4 +23,4 @@ jobs:
     - name: Install ncat
       run: sudo apt-get update && sudo apt-get install -y ncat
     - name: Testing the happy path :)
-      run: cd tests; bash two_clients_join.sh
+      run: cd tests/end-to-end/bash; bash two_clients_join.sh
