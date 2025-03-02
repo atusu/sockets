@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using server;
 
+namespace server;
 public class Server{
     public List<ClientData> clients {get; set;}
     public int port {get;set;}

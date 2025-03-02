@@ -1,4 +1,6 @@
-﻿public class Program
+﻿using server;
+
+public class Program
 {
     static void Main()
     {
