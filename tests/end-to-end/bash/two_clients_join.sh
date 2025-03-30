@@ -3,7 +3,8 @@ set -e
 rm -rf build
 dotnet build ../../../server -o build
 kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3) || echo "no server to kill"
-./build/server &
+# Note: on Windwos (and gh actions somehow) you can do just ./build/server & and it will work
+dotnet run ./build/server --project ../../../server &
 PID_SERVER=$!
 rm -f c1.txt; touch c1.txt;
 rm -f c2.txt; touch c2.txt;
@@ -21,7 +22,7 @@ echo "-- clients connected hopefully"
 
 function cleanup_pids {
     kill $PID_C1 $PID_C2 $PID_SERVER
-    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) || echo "no such process"
+    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) || ( echo "no such process" )
 }
 
 function wait_n_lines {
@@ -75,3 +76,5 @@ echo "/leave" >> c1.txt
 
 echo "-- killing clients and server"
 cleanup_pids
+
+echo "-- done"

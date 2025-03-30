@@ -1,5 +1,16 @@
 # SOCKETS
 
+## Installationb
+
+### Linux
+On Ubuntu (or other systems with `snap`):
+```
+sudo snap install dotnet-sdk --classic --channel 8.0/stable
+```
+
+### Windows
+Just install Visual Studio or Visual Studio Code + dotnet stuff and windows handle it for you.
+
 ## Running the tests
 
 ### Bash end to end test
