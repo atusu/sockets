@@ -37,15 +37,15 @@ kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3) || echo "
 
 echo "-- building & starting the server"
 dotnet build ../../../server -o build
-./build/server &
+./build/server 9999 &
 PID_SERVER=$!
 sleep 1; # wait for server to start
 
 echo "-- starting the two clients"
 touch c1.txt c2.txt;
-tail -f c1.txt | ncat -v localhost 8080 > out_c1.txt &
+tail -f c1.txt | ncat -v localhost 9999 > out_c1.txt &
 PID_C1=$!
-tail -f c2.txt | ncat -v localhost 8080 > out_c2.txt &
+tail -f c2.txt | ncat -v localhost 9999 > out_c2.txt &
 PID_C2=$!
 sleep 3; # first ncat takes a while for some reason
 
