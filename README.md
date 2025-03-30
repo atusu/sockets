@@ -3,7 +3,7 @@
 ## Installation
 
 ### Windows
-Just install Visual Studio or Visual Studio Code + dotnet stuff and windows handle it for you.
+Install Visual Studio or Visual Studio Code + dotnet runtime 8.0 and Windows will handle it for you.
 
 ### Linux
 Tested on Raspberry Pi OS and Ubuntu 24.04
