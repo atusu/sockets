@@ -16,23 +16,23 @@ public class Server{
         TcpListener server = new TcpListener(IPAddress.Any, port);
         server.Start();
 
-        Console.WriteLine("Server started.");
+        Console.WriteLine("[server] Server started.");
 
         while (true)
         {
             DateTime start = DateTime.Now;
-            Console.WriteLine("Waiting for clients...");
+            Console.WriteLine("[server] Waiting for clients...");
             while ((DateTime.Now - start).TotalMilliseconds < 1000)
             {
                 if (server.Pending()) {
                     clients.Add(new ClientData{
                         TcpClient = server.AcceptTcpClient(),
                     });
-                    Console.WriteLine("Added new client :)");
+                    Console.WriteLine("[server] Added new client :)");
                 }
             }
 
-            Console.WriteLine($"Checking existing clients... (Total: {clients.Count()})");
+            Console.WriteLine($"[server] Checking existing clients... (Total: {clients.Count()})");
             for(var i=0 ; i < clients.Count(); i++)
             {
                 if(!clients[i].IsConnected()) {
@@ -81,7 +81,7 @@ public class Server{
         string message = Receive(stream);
         // some clients end a \n as well, like for example the netcat client (integration test). We trim it.
         message = message[message.Count()-1].ToString() == "\n" ? message.Substring(0, message.Count()-1) : message;
-        Console.WriteLine($"Handling client message: {message}");
+        Console.WriteLine($"[server] Handling client message: {message}");
         client.CommandHistory.Add(message);
 
         if(client.ClientState == ClientState.INIT) {
@@ -98,7 +98,7 @@ public class Server{
                 return;
             }
 
-            Console.WriteLine($"Client {message} is now connected to the server.");
+            Console.WriteLine($"[server] Client {message} is now connected to the server.");
             client.Name = message;
             client.ClientState = ClientState.CONNECTED;
             SendToClient(stream, "OK");
@@ -109,14 +109,14 @@ public class Server{
             if (message == "/leave") {
                 client.TcpClient.Close();
                 clients.RemoveAll(c => c.Name == client.Name);
-                Console.WriteLine("Client disconnected: " + client.Name);
+                Console.WriteLine("[server] Client disconnected: " + client.Name);
                 return;
             }
 
             if(message == "/get-list") {
                 string clientList = string.Join(", ", clients.Select(client => client.Name)) + "\n";
                 SendToClient(stream, clientList);
-                Console.WriteLine("The list was sent to the client.");
+                Console.WriteLine("[server] The list was sent to the client.");
                 return;
             }
 
@@ -125,3 +125,4 @@ public class Server{
         }
     }
 }
+

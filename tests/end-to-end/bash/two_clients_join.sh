@@ -21,7 +21,7 @@ echo "-- clients connected hopefully"
 
 function cleanup_pids {
     kill $PID_C1 $PID_C2 $PID_SERVER
-    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) || echo "no such process"
+    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) || echo "--- no such process"
 }
 
 function wait_n_lines {
@@ -39,7 +39,7 @@ function wait_n_lines {
             break
         fi
     done
-    echo "waited $n_tries tries"
+    echo "[bash] waited $n_tries tries"
 }
 
 function test_or_die {
@@ -48,16 +48,16 @@ function test_or_die {
 }
 
 echo "/join" >> c1.txt
-test_or_die out_c1.txt OK 1 "failed after c1 join"
+test_or_die out_c1.txt OK 1 "--- failed after c1 join"
 
 echo "/join" >> c2.txt
-test_or_die out_c2.txt OK 1 "failed after c2 join"
+test_or_die out_c2.txt OK 1 "--- failed after c2 join"
 
 echo "marianela" >> c1.txt
-test_or_die out_c1.txt OK 2 "failed after c1 name"
+test_or_die out_c1.txt OK 2 "--- failed after c1 name"
 
 echo "gigel" >> c2.txt
-test_or_die out_c2.txt OK 2 "failed after c2 name"
+test_or_die out_c2.txt OK 2 "--- failed after c2 name"
 
 echo "/get-list" >> c1.txt
 wait_n_lines out_c1.txt 3
@@ -69,9 +69,10 @@ echo "/leave" >> c2.txt
 sleep 1
 
 echo "/get-list" >> c1.txt
-test_or_die out_c1.txt "marianela" 4 "failed after 2nd get-list"
+test_or_die out_c1.txt "marianela" 4 "--- failed after 2nd get-list"
 
 echo "/leave" >> c1.txt
 
 echo "-- killing clients and server"
 cleanup_pids
+
