@@ -25,7 +25,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y ncat
 
     - name: End to end bash test
-      run: cd tests/end-to-end/bash; bash two_clients_join.sh
+      run: cd tests/end-to-end/bash; ./run_test.sh
 
     - name: Dotnet tests
       run: cd tests/Server.Tests; dotnet test

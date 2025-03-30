@@ -1,23 +1,5 @@
 #!/usr/bin/bash
 set -e
-rm -rf build
-dotnet build ../../../server -o build
-kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3) || echo "no server to kill"
-./build/server &
-PID_SERVER=$!
-rm -f c1.txt; touch c1.txt;
-rm -f c2.txt; touch c2.txt;
-sleep 1; # wait for server to start
-
-tail -f c1.txt | ncat -v localhost 8080 > out_c1.txt &
-PID_C1=$!
-
-tail -f c2.txt | ncat -v localhost 8080 > out_c2.txt &
-PID_C2=$!
-
-sleep 3; # first ncat takes a while for some reason
-
-echo "-- clients connected hopefully"
 
 function cleanup_pids {
     kill $PID_C1 $PID_C2 $PID_SERVER
@@ -46,6 +28,28 @@ function test_or_die {
     wait_n_lines $1 $3
     test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
 }
+
+echo "-- starting end to end test"
+
+echo "-- cleaning old artifacts and running processes (if any)"
+rm -rf build c1.txt c2.txt
+kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3) || echo "no server to kill"
+
+echo "-- building & starting the server"
+dotnet build ../../../server -o build
+./build/server &
+PID_SERVER=$!
+sleep 1; # wait for server to start
+
+echo "-- starting the two clients"
+touch c1.txt c2.txt;
+tail -f c1.txt | ncat -v localhost 8080 > out_c1.txt &
+PID_C1=$!
+tail -f c2.txt | ncat -v localhost 8080 > out_c2.txt &
+PID_C2=$!
+sleep 3; # first ncat takes a while for some reason
+
+echo "-- clients connected (hopefully)"
 
 echo "/join" >> c1.txt
 test_or_die out_c1.txt OK 1 "--- failed after c1 join"
