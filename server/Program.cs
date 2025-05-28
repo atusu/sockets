@@ -1,17 +1,10 @@
-﻿using System;
-using server;
+﻿using server;
 
 public class Program
 {
-    static void Main(string[] args)
+    static void Main()
     {
-	int port = 8080;
-        if (args.Length > 0)
-	{
-	    port = Int32.Parse(args[0]);
-	}
-	Console.WriteLine($"Starting server on port: {port}");
-        var server = new Server(port);
+        var server = new Server(8080);
         server.ServerInit();
     }
 }
