@@ -1,8 +1,6 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=833ab41c_002D7888_002D4a6c_002Da306_002Dc67d869d15db/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="EmptyServer" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=51af5af5_002D3eae_002D41d8_002Dbb9a_002D9e8c760c3c6f/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="ServerTests" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;TestAncestor&gt;&#xD;
-    &lt;TestId&gt;xUnit::7137D168-4866-F30A-4970-8DC60B87D66D::net8.0::ServerTests.EmptyServer&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;xUnit::7137D168-4866-F30A-4970-8DC60B87D66D::net8.0::ServerTests.Test&lt;/TestId&gt;&#xD;
-    &lt;TestId&gt;xUnit::7137D168-4866-F30A-4970-8DC60B87D66D::net8.0::ServerTests.AddNewClient&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::7137D168-4866-F30A-4970-8DC60B87D66D::net8.0::ServerTests&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>
