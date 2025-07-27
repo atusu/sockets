@@ -35,7 +35,7 @@ function wait_n_tries_server_connection {
   while ! ncat -z localhost $2; do
     sleep 0.1 # wait for 1/10 of a second before checking again
     n_tries=$((n_tries+1))
-    if [ $n_tries == $1]; then
+    if [ "$n_tries" == "$1" ]; then
       echo "failed to connect after $1 tries"
       kill $$
     fi
