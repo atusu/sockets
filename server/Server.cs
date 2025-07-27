@@ -41,6 +41,7 @@ public class Server{
                 }
                 HandleClient(clients[i]);
             }
+            Thread.Sleep(100);
         }
     }
     private void SendToClient(Stream stream, string message)

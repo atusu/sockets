@@ -37,6 +37,7 @@ function wait_n_tries_server_connection {
     n_tries=$((n_tries+1))
     if [ "$n_tries" == "$1" ]; then
       echo "failed to connect after $1 tries"
+      cleanup_pids
       kill $$
     fi
   done
