@@ -29,19 +29,6 @@ function test_or_die {
     test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
 }
 
-function wait_n_tries_server_connection {  
-  echo "Waiting for server to start on port $2..."
-  n_tries=0
-  while ! ncat -z localhost $2; do
-    sleep 0.1 # wait for 1/10 of a second before checking again
-    n_tries=$((n_tries+1))
-    if [ "$n_tries" == "$1" ]; then
-      echo "failed to connect after $1 tries"
-      kill $$
-    fi
-  done
-}
-
 echo "-- starting end to end test"
 
 echo "-- cleaning old artifacts and running processes (if any)"
@@ -52,7 +39,10 @@ echo "-- building & starting the server"
 dotnet build ../../../server -o build
 ./build/server 9999 &
 PID_SERVER=$!
-wait_n_tries_server_connection 30 9999
+if [ "$CI" = "true" ]; then
+  echo "This script is running in a GitHub Actions CI environment."
+  sleep 5
+fi
 
 echo "-- starting the two clients"
 touch c1.txt c2.txt;
