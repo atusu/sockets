@@ -4,12 +4,12 @@ using System.Text;
 
 namespace server;
 public class Server{
-    public List<ClientData> clients {get; set;}
+    public List<IClientConnection> clients {get; set;}
     public int port {get;set;}
 
     public Server(int port){
         this.port = port;
-        clients = new List<ClientData>();
+        clients = new List<IClientConnection>();
     }
 
     public void ServerInit(){
@@ -25,9 +25,8 @@ public class Server{
             while ((DateTime.Now - start).TotalMilliseconds < 1000)
             {
                 if (server.Pending()) {
-                    clients.Add(new ClientData{
-                        TcpClient = server.AcceptTcpClient(),
-                    });
+                    var tcpClient = server.AcceptTcpClient();
+                    clients.Add(new ClientConnection(tcpClient));
                     Console.WriteLine("[server] Added new client :)");
                 }
             }
@@ -44,7 +43,7 @@ public class Server{
             }
         }
     }
-    private void SendToClient(NetworkStream stream, string message)
+    private void SendToClient(Stream stream, string message)
     {
         // the \n here is needed fot the nc test so we get the message on a new line always
         message = message[message.Count()-1].ToString() == "\n" ? message : message + "\n";
@@ -52,7 +51,7 @@ public class Server{
         stream.Write(responseBytes, 0, responseBytes.Length);
     }
 
-    private string Receive(NetworkStream stream)
+    private string Receive(Stream stream)
     {
         byte[] acknowledgmentBytes = new byte[1024];
         int bytesRead = stream.Read(acknowledgmentBytes, 0, acknowledgmentBytes.Length);
@@ -60,7 +59,7 @@ public class Server{
         return acknowledgment;
     }
 
-    public bool ClientAlreadyExists(List<ClientData> clients, string name)
+    public bool ClientAlreadyExists(List<IClientConnection> clients, string name)
     {
         foreach (var client in clients) {
             if (client.Name == name) {
@@ -70,13 +69,11 @@ public class Server{
         return false;
     }
 
-    public void HandleClient(ClientData client)
+    public void HandleClient(IClientConnection client)
     {
-        if (!client.TcpClient.GetStream().DataAvailable) {
+        var stream = client.GetStream();
+        if (!stream.CanRead)
             return;
-        }
-
-        NetworkStream stream = client.TcpClient.GetStream();
 
         string message = Receive(stream);
         // some clients end a \n as well, like for example the netcat client (integration test). We trim it.
@@ -107,7 +104,7 @@ public class Server{
 
         if(client.ClientState == ClientState.CONNECTED){
             if (message == "/leave") {
-                client.TcpClient.Close();
+                client.Close();
                 clients.RemoveAll(c => c.Name == client.Name);
                 Console.WriteLine("[server] Client disconnected: " + client.Name);
                 return;

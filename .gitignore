@@ -2,4 +2,4 @@ server/obj
 server/bin
 client/obj
 client/bin
-
+.vs
