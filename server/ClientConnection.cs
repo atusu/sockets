@@ -1,12 +1,5 @@
 using System.Net.Sockets;
 namespace server;
-
-public enum ClientState {
-    INIT,
-    JOINED,
-    CONNECTED
-}
-
 public class ClientConnection : IClientConnection
 {
     private TcpClient _tcpClient;
