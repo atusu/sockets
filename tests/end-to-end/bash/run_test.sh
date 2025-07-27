@@ -38,6 +38,7 @@ function wait_n_tries_server_connection {
     if [ $n_tries == $1]; them
       echo "failed to connect after $1 tries"
       kill $$
+    fi
   done
 }
 
