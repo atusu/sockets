@@ -39,7 +39,10 @@ echo "-- building & starting the server"
 dotnet build ../../../server -o build
 ./build/server 9999 &
 PID_SERVER=$!
-sleep 1; # wait for server to start
+echo "Waiting for server to start on port 9999..."
+while ! nc -z localhost 9999; do
+  sleep 0.1 # wait for 1/10 of a second before checking again
+done
 
 echo "-- starting the two clients"
 touch c1.txt c2.txt;
