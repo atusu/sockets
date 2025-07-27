@@ -32,7 +32,7 @@ function test_or_die {
 function wait_n_tries_server_connection {  
   echo "Waiting for server to start on port $2..."
   n_tries=0
-  while ! nc -z localhost $2; do
+  while ! ncat -z localhost $2; do
     sleep 0.1 # wait for 1/10 of a second before checking again
     n_tries=$((n_tries+1))
     if [ $n_tries == $1]; then
@@ -92,3 +92,5 @@ echo "/leave" >> c1.txt
 
 echo "-- killing clients and server"
 cleanup_pids
+
+echo "-- DONE. All good."
