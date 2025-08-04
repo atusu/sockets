@@ -72,10 +72,10 @@ public class Server{
 
     public void HandleClient(IClientConnection client)
     {
-        var stream = client.GetStream();
-        if (!stream.CanRead)
+        if (!client.DataAvailable())
             return;
-
+        
+        var stream = client.GetStream();
         string message = Receive(stream);
         // some clients end a \n as well, like for example the netcat client (integration test). We trim it.
         message = message[message.Count()-1].ToString() == "\n" ? message.Substring(0, message.Count()-1) : message;

@@ -9,4 +9,5 @@ public interface IClientConnection
     bool IsConnected();
     Stream GetStream();
     void Close();
+    bool DataAvailable();
 }
