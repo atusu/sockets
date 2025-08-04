@@ -20,12 +20,12 @@ echo 'export PATH="$PATH:$HOME/libs/dotnet"' >> ~/.bashrc
 ### Bash end to end test
 For Windows use Git Bash
 ```bash
-cd [path]/Sockets/tests/end-to-end/bash
-bash two_clients_join.sh
+cd tests/end-to-end/bash
+bash run_test.sh
 ```
 
 ### .NET Tests (WIP)
 ```powershell
-cd [path]/Server.Tests
+cd tests/Server.Tests
 dotnet test
 ```
