@@ -3,3 +3,4 @@ server/bin
 client/obj
 client/bin
 .vs
+sockets.sln.DotSettings.user
