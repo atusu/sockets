@@ -2,13 +2,16 @@
 set -e
 
 function cleanup_pids {
-    kill $PID_C1 $PID_C2 $PID_SERVER
-    kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) || echo "--- no such process"
+    ( kill $PID_C1 $PID_C2 $PID_SERVER 2>/dev/null ) || echo "--- no such process"
+    ( kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) 2>/dev/null ) || echo "--- no such process"
 }
 
 function wait_n_lines {
     n_tries=0
     while true; do
+        if [ $n_tries == "1000" ]; then # stop after ~10s of waiting
+            break
+        fi
         n_lines=$(cat $1 | wc -l)
         n_tries=$((n_tries+1))
         if [ $n_lines -lt "$2" ]; then
@@ -17,23 +20,26 @@ function wait_n_lines {
         else
             break
         fi
-        if [ $n_tries == "1000" ]; then # stop after ~10s of waiting
-            break
-        fi
     done
     echo "[bash] waited $n_tries tries"
 }
 
 function test_or_die {
     wait_n_lines $1 $3
-    test "$(cat $1 | tail -n 1)" == "$2" || ( echo $4; echo "in file $1:"; cat $1; cleanup_pids; kill $$ )
+    test "$(cat $1 | tail -n 1)" == "$2" || (
+        echo $4;
+        echo "in file $1:";
+        cat $1;
+        cleanup_pids; kill $$
+    )
 }
 
 echo "-- starting end to end test"
 
 echo "-- cleaning old artifacts and running processes (if any)"
 rm -rf build c1.txt c2.txt
-kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3) || echo "no server to kill"
+( kill $(ps -ef | grep "build/server" | tr -s "  " " " | cut -d " " -f3) 2>/dev/null ) || echo "no server to kill"
+( kill $(lsof -i:9999 -t) 2>/dev/null ) || echo "no server to kill"
 
 echo "-- building & starting the server"
 dotnet build ../../../server -o build
@@ -41,16 +47,16 @@ dotnet build ../../../server -o build
 PID_SERVER=$!
 if [ "$CI" = "true" ]; then
   echo "This script is running in a GitHub Actions CI environment."
-  sleep 5
 fi
+sleep 10 # waiting for server to start
 
 echo "-- starting the two clients"
 touch c1.txt c2.txt;
 tail -f c1.txt | ncat -v localhost 9999 > out_c1.txt &
 PID_C1=$!
+# sleep 0.1; # first ncat takes a while for some reason
 tail -f c2.txt | ncat -v localhost 9999 > out_c2.txt &
 PID_C2=$!
-sleep 3; # first ncat takes a while for some reason
 
 echo "-- clients connected (hopefully)"
 
