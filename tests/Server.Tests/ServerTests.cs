@@ -26,6 +26,45 @@ public class ServerTests
         Assert.True(server.clients[0].ClientState == ClientState.CONNECTED);
     }
 
+    [Fact]
+    public void TestTheEntireFlow()
+    {
+        var server = new server.Server(8080);
+        
+        var client1 = new MockClientConnection();
+        var client2 = new MockClientConnection();
+        
+        server.clients.Add(client1);
+        server.clients.Add(client2);
+        
+        Assert.True(server.clients.Count == 2);
+        
+        Assert.True(server.clients[0].ClientState == ClientState.INIT);
+        Assert.Equal("OK", HandleClientCommand("/join", server, client1));
+        
+        Assert.True(server.clients[1].ClientState == ClientState.INIT);
+        Assert.Equal("OK", HandleClientCommand("/join", server, client2));
+        
+        Assert.True(server.clients[0].ClientState == ClientState.JOINED);
+        Assert.Equal("OK", HandleClientCommand("Marinela", server, client1));
+        
+        Assert.True(server.clients[1].ClientState == ClientState.JOINED);
+        Assert.Equal("OK", HandleClientCommand("Gigel", server, client2));
+        
+        Assert.True(server.clients[0].ClientState == ClientState.CONNECTED);        
+        Assert.True(server.clients[1].ClientState == ClientState.CONNECTED);
+
+        Assert.Equal("Marinela, Gigel", HandleClientCommand("/get-list", server, client1));
+        Assert.Equal("Marinela, Gigel", HandleClientCommand("/get-list", server, client2));
+
+        HandleClientCommand("/leave", server, client1);
+        Assert.Single(server.clients);
+        
+        Assert.Equal("Gigel", HandleClientCommand("/get-list", server, client2));
+        
+        HandleClientCommand("/leave", server, client2);
+        Assert.True(!server.clients.Any());
+    }
     public string HandleClientCommand(string input, server.Server server, MockClientConnection client)
     {
         client.SetInput(input);
