@@ -2,6 +2,9 @@
 set -e
 
 function cleanup_pids {
+    if [ "$CI" = "true" ]; then
+      return
+    fi
     ( kill $PID_C1 $PID_C2 $PID_SERVER 2>/dev/null ) || echo "--- no such process"
     ( kill $(ps -ef | grep tail | tr -s "  " " " | cut -d " " -f3) 2>/dev/null ) || echo "--- no such process"
 }
