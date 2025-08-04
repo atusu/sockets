@@ -5,8 +5,8 @@ namespace Server.Tests;
 
 public class MockClientConnection : IClientConnection
 {
-    private MemoryStream _readStream;
-    private MemoryStream _writeStream;
+    private MemoryStream? _readStream;
+    private MemoryStream? _writeStream;
 
     public string Name { get; set; }
     public ClientState ClientState { get; set; } = ClientState.INIT;
@@ -24,7 +24,7 @@ public class MockClientConnection : IClientConnection
     public Stream GetStream() => new CombinedStream(_readStream, _writeStream);
 
     public void Close() { }
-
+    public bool DataAvailable() => _readStream != null && _readStream.Length > 0;
     public string GetResponse()
     {
         return Encoding.ASCII.GetString(_writeStream.ToArray()).Trim();

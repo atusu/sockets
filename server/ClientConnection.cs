@@ -32,4 +32,5 @@ public class ClientConnection : IClientConnection
     public Stream GetStream() => _tcpClient.GetStream();
 
     public void Close() => _tcpClient.Close();
+    public bool DataAvailable() => _tcpClient.GetStream().DataAvailable;
 }
