@@ -83,6 +83,8 @@ public class ServerTests
         HandleClientCommand("Marinela", server, client1);
         HandleClientCommand("Gigel", server, client2);
         
+        Assert.Equal("INFO: user Marinela shared no files", HandleClientCommand("/list-files Marinela", server, client2));
+
         Assert.Equal("OK", HandleClientCommand("/share file1.txt", server, client1));
         Assert.Equal("file1.txt", HandleClientCommand("/list-files Marinela", server, client2));
 
@@ -90,6 +92,9 @@ public class ServerTests
         
         Assert.Equal("OK", HandleClientCommand("/share file2.txt", server, client1));
         Assert.Equal("file1.txt, file2.txt", HandleClientCommand("/list-files Marinela", server, client2));
+        
+        Assert.Equal("OK", HandleClientCommand("/unshare file1.txt", server, client1));
+        Assert.Equal("file2.txt", HandleClientCommand("/list-files Marinela", server, client2));
         
         Assert.Equal("ERR: no such user on server", HandleClientCommand("/list-files InexistentUser", server, client2));
         

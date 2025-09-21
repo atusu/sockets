@@ -68,10 +68,10 @@ public class Server {
 
     public bool ClientAlreadyExists(List<IClientConnection> clients, string name)
     {
-        foreach (var client in clients) {
-            if (client.Name == name) {
+        foreach (var client in clients) 
+        {
+            if (client.Name == name) 
                 return true;
-            }
         }
         return false;
     }
@@ -88,16 +88,19 @@ public class Server {
         Console.WriteLine($"[server] Handling client message: {message}");
         client.CommandHistory.Add(message);
 
-        if(client.ClientState == ClientState.INIT) {
+        if(client.ClientState == ClientState.INIT) 
+        {
             SendToClient(stream, message == "/join" ? "OK" : "ERR: you cannot join server using this command.");
-            if (message == "/join") {
+            if (message == "/join") 
                 client.ClientState = ClientState.JOINED;
-            }
+            
             return;
         }
 
-        if(client.ClientState == ClientState.JOINED) {
-            if (ClientAlreadyExists(clients, message)) {
+        if(client.ClientState == ClientState.JOINED) 
+        {
+            if (ClientAlreadyExists(clients, message)) 
+            {
                 SendToClient(stream, "ERR: name is already on server");
                 return;
             }
@@ -109,23 +112,43 @@ public class Server {
             return;
         }
 
-        if(client.ClientState == ClientState.CONNECTED){
-            if (message == "/leave") {
+        if(client.ClientState == ClientState.CONNECTED)
+        {
+            if (message == "/leave") 
+            {
                 client.Close();
                 clients.RemoveAll(c => c.Name == client.Name);
                 Console.WriteLine("[server] Client disconnected: " + client.Name);
                 return;
             }
 
-            if(message == "/get-list") {
-                string clientList = string.Join(", ", clients.Select(client => client.Name)) + "\n";
+            if(message == "/get-list") 
+            {
+                string clientList = string.Join(", ", clients.Select(c => c.Name)) + "\n";
                 SendToClient(stream, clientList);
                 Console.WriteLine("[server] The list was sent to the client.");
                 return;
             }
 
+            if (message.StartsWith("/share"))
+            {
+                SendToClient(stream, "TODO: not implemented");
+                return;
+            }
+            
+            if (message.StartsWith("/unshare"))
+            {
+                SendToClient(stream, "TODO: not implemented");
+                return;
+            }
+            
+            if (message.StartsWith("/list-files"))
+            {
+                SendToClient(stream, "TODO: not implemented");
+                return;
+            }
+            
             SendToClient(stream, "Invalid command, please check spelling!");
-            return;
         }
     }
 }
