@@ -3,7 +3,8 @@ using System.Net.Sockets;
 using System.Text;
 
 namespace server;
-public class Server{
+public class Server {
+    private static int SLEEP_TIME = 1000;
     public List<IClientConnection> clients {get; set;}
     public int port {get;set;}
 
@@ -12,23 +13,26 @@ public class Server{
         clients = new List<IClientConnection>();
     }
 
-    public void ServerInit(){
+    public void ServerInit()
+    {
         TcpListener server = new TcpListener(IPAddress.Any, port);
         server.Start();
 
         Console.WriteLine("[server] Server started.");
+        MainLoopSequencialServer(server);
+    }
 
+    private void MainLoopSequencialServer(TcpListener server)
+    {
         while (true)
         {
             DateTime start = DateTime.Now;
-            Console.WriteLine("[server] Waiting for clients...");
-            while ((DateTime.Now - start).TotalMilliseconds < 1000)
-            {
-                if (server.Pending()) {
-                    var tcpClient = server.AcceptTcpClient();
-                    clients.Add(new ClientConnection(tcpClient));
-                    Console.WriteLine("[server] Added new client :)");
-                }
+            Console.WriteLine("[server] Waiting for clients..."); 
+
+            if (server.Pending()) {
+                var tcpClient = server.AcceptTcpClient();
+                clients.Add(new ClientConnection(tcpClient));
+                Console.WriteLine("[server] Added new client :)");
             }
 
             Console.WriteLine($"[server] Checking existing clients... (Total: {clients.Count()})");
@@ -41,9 +45,11 @@ public class Server{
                 }
                 HandleClient(clients[i]);
             }
-            Thread.Sleep(100);
+            
+            Thread.Sleep(SLEEP_TIME);
         }
     }
+    
     private void SendToClient(Stream stream, string message)
     {
         // the \n here is needed fot the nc test so we get the message on a new line always
