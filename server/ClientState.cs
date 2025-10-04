@@ -2,5 +2,6 @@
 public enum ClientState {
     INIT,
     JOINED,
-    CONNECTED
+    CONNECTED,
+    GET_FILE_DETAILS
 }

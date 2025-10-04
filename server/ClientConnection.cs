@@ -12,7 +12,7 @@ public class ClientConnection : IClientConnection
     public string Name { get; set; }
     public ClientState ClientState { get; set; } = ClientState.INIT;
     public List<string> CommandHistory { get; set; } = new();
-    public List<string> SharedFiles { get; set; } = new();
+    public List<File> SharedFiles { get; set; } = new();
 
     public bool IsConnected()
     {
@@ -34,4 +34,8 @@ public class ClientConnection : IClientConnection
 
     public void Close() => _tcpClient.Close();
     public bool DataAvailable() => _tcpClient.GetStream().DataAvailable;
+    public List<File> GetSharedFiles()
+    {
+        return SharedFiles.Where(f => f.Size!= null || f.Hash != null).ToList();
+    }
 }

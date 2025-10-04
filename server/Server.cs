@@ -111,6 +111,38 @@ public class Server {
             SendToClient(stream, "OK");
             return;
         }
+        
+        if (client.ClientState == ClientState.GET_FILE_DETAILS)
+        {
+            string?[] parts = message.Split(' ');
+
+            if (parts.Count() > 2)
+            {
+                SendToClient(stream, "ERR: invalid command");
+                return;
+            }
+                
+            if (!long.TryParse(parts[0], out var size) || size <= 0)
+            {
+                SendToClient(stream, "ERR: size must be a positive number");
+                return;
+            }
+                
+            if (parts[1].Length != 32)
+            {
+                SendToClient(stream, "ERR: invalid hash");
+                return;
+            }
+                
+            var file = client.SharedFiles.FirstOrDefault(f => f.Size == null && string.IsNullOrEmpty(f.Hash));
+            var hash = parts[1];
+                
+            file.Size = size;
+            file.Hash = hash;
+            client.ClientState = ClientState.CONNECTED;
+            SendToClient(stream, "OK");
+            return;
+        }
 
         if(client.ClientState == ClientState.CONNECTED)
         {
@@ -146,13 +178,15 @@ public class Server {
                     return;
                 }
 
-                if (client.SharedFiles.Contains(fileName))
+                if (client.SharedFiles.Any(f => f.Name == fileName))
                 {
                     SendToClient(stream, "ERR: file already shared");
                     return;
                 }
                 
-                client.SharedFiles.Add(fileName);
+                var newFile = new File { Name = fileName, Size = null, Hash = null };
+                client.SharedFiles.Add(newFile);
+                client.ClientState = ClientState.GET_FILE_DETAILS;
                 SendToClient(stream, "OK");
                 return;
             }
@@ -173,7 +207,7 @@ public class Server {
                     return;
                 }
                 
-                client.SharedFiles.Remove(fileName);
+                client.SharedFiles.RemoveAll(f => f.Name == fileName);
                 SendToClient(stream, "OK");
                 return;
             }
@@ -207,19 +241,16 @@ public class Server {
                     return;
                 }
 
-                string filesList = string.Join(", ", identifiedClient.SharedFiles) + "\n";
-
+                string filesList = string.Join("\n", identifiedClient.GetSharedFiles().Select(file =>
+                    $"({file.Name}, {file.Size}, {file.Hash})")) + "\n";
+                
                 SendToClient(stream, filesList);
                 return;
             }
+
             
             SendToClient(stream, "Invalid command, please check spelling!");
         }
-    }
-
-    public bool IsValidMessage(string message)
-    {
-        return !message.Contains(" ");
     }
 }
 
