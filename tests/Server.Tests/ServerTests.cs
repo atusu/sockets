@@ -27,7 +27,7 @@ public class ServerTests
     }
 
     [Fact]
-    public void TestTheEntireFlow()
+    public void TestJoinTheServerEntireFlow()
     {
         var server = new server.Server(8080);
         
@@ -65,6 +65,44 @@ public class ServerTests
         HandleClientCommand("/leave", server, client2);
         Assert.True(!server.clients.Any());
     }
+
+    [Fact]
+    public void TestShareUnshareFilesFlow()
+    {
+        var server = new server.Server(8080);
+        
+        var client1 = new MockClientConnection();
+        var client2 = new MockClientConnection();
+        
+        server.clients.Add(client1);
+        server.clients.Add(client2);
+
+        HandleClientCommand("/join", server, client1);
+        HandleClientCommand("/join", server, client2);
+        
+        HandleClientCommand("Marinela", server, client1);
+        HandleClientCommand("Gigel", server, client2);
+        
+        Assert.Equal("INFO: user Marinela shared no files", HandleClientCommand("/list-files Marinela", server, client2));
+
+        Assert.Equal("OK", HandleClientCommand("/share file1.txt", server, client1));
+        Assert.Equal("file1.txt", HandleClientCommand("/list-files Marinela", server, client2));
+        
+        Assert.Equal("ERR: file already shared", HandleClientCommand("/share file1.txt", server, client1));
+        Assert.Equal("ERR: no file provided", HandleClientCommand("/share ", server, client1));
+        
+        Assert.Equal("OK", HandleClientCommand("/share file2.txt", server, client1));
+        Assert.Equal("file1.txt, file2.txt", HandleClientCommand("/list-files Marinela", server, client2));
+        
+        Assert.Equal("OK", HandleClientCommand("/unshare file1.txt", server, client1));
+        Assert.Equal("file2.txt", HandleClientCommand("/list-files Marinela", server, client2));
+        
+        Assert.Equal("ERR: no such user on server", HandleClientCommand("/list-files InexistentUser", server, client2));
+        
+        HandleClientCommand("/leave", server, client1);
+        Assert.Equal("ERR: no such user on server", HandleClientCommand("/list-files Marinela", server, client2));
+    }
+    
     public string HandleClientCommand(string input, server.Server server, MockClientConnection client)
     {
         client.SetInput(input);

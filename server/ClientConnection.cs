@@ -12,6 +12,7 @@ public class ClientConnection : IClientConnection
     public string Name { get; set; }
     public ClientState ClientState { get; set; } = ClientState.INIT;
     public List<string> CommandHistory { get; set; } = new();
+    public List<string> SharedFiles { get; set; } = new();
 
     public bool IsConnected()
     {

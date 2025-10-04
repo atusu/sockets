@@ -68,10 +68,10 @@ public class Server {
 
     public bool ClientAlreadyExists(List<IClientConnection> clients, string name)
     {
-        foreach (var client in clients) {
-            if (client.Name == name) {
+        foreach (var client in clients) 
+        {
+            if (client.Name == name) 
                 return true;
-            }
         }
         return false;
     }
@@ -88,16 +88,19 @@ public class Server {
         Console.WriteLine($"[server] Handling client message: {message}");
         client.CommandHistory.Add(message);
 
-        if(client.ClientState == ClientState.INIT) {
+        if(client.ClientState == ClientState.INIT) 
+        {
             SendToClient(stream, message == "/join" ? "OK" : "ERR: you cannot join server using this command.");
-            if (message == "/join") {
+            if (message == "/join") 
                 client.ClientState = ClientState.JOINED;
-            }
+            
             return;
         }
 
-        if(client.ClientState == ClientState.JOINED) {
-            if (ClientAlreadyExists(clients, message)) {
+        if(client.ClientState == ClientState.JOINED) 
+        {
+            if (ClientAlreadyExists(clients, message)) 
+            {
                 SendToClient(stream, "ERR: name is already on server");
                 return;
             }
@@ -109,24 +112,114 @@ public class Server {
             return;
         }
 
-        if(client.ClientState == ClientState.CONNECTED){
-            if (message == "/leave") {
+        if(client.ClientState == ClientState.CONNECTED)
+        {
+            if (message == "/leave") 
+            {
                 client.Close();
                 clients.RemoveAll(c => c.Name == client.Name);
                 Console.WriteLine("[server] Client disconnected: " + client.Name);
                 return;
             }
 
-            if(message == "/get-list") {
-                string clientList = string.Join(", ", clients.Select(client => client.Name)) + "\n";
+            if(message == "/get-list") 
+            {
+                string clientList = string.Join(", ", clients.Select(c => c.Name)) + "\n";
                 SendToClient(stream, clientList);
                 Console.WriteLine("[server] The list was sent to the client.");
                 return;
             }
 
+            if (message.StartsWith("/share"))
+            {
+                if (!message.Contains(' '))
+                {
+                    SendToClient(stream, "ERR: incorrect command");
+                    return;
+                }
+                
+                var fileName = message.Substring(7);
+                
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    SendToClient(stream, "ERR: no file provided");
+                    return;
+                }
+
+                if (client.SharedFiles.Contains(fileName))
+                {
+                    SendToClient(stream, "ERR: file already shared");
+                    return;
+                }
+                
+                client.SharedFiles.Add(fileName);
+                SendToClient(stream, "OK");
+                return;
+            }
+            
+            if (message.StartsWith("/unshare"))
+            {
+                if (!message.Contains(' '))
+                {
+                    SendToClient(stream, "ERR: incorrect command");
+                    return;
+                }
+                
+                var fileName = message.Substring(9);
+                
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    SendToClient(stream, "ERR: no file provided");
+                    return;
+                }
+                
+                client.SharedFiles.Remove(fileName);
+                SendToClient(stream, "OK");
+                return;
+            }
+            
+            if (message.StartsWith("/list-files"))
+            {
+                if (!message.Contains(' '))
+                {
+                    SendToClient(stream, "ERR: incorrect command");
+                    return;
+                }
+                
+                var userName = message.Substring(12);
+
+                if (string.IsNullOrEmpty(userName))
+                {
+                    SendToClient(stream, "ERR: no user provided");
+                    return;
+                }
+
+                var identifiedClient = clients.FirstOrDefault(c => c.Name == userName);
+                if (identifiedClient == null)
+                {
+                    SendToClient(stream, "ERR: no such user on server");
+                    return;
+                }
+
+                if (identifiedClient.SharedFiles.Count == 0)
+                {
+                    SendToClient(stream, $"INFO: user {userName} shared no files");
+                    return;
+                }
+
+                string filesList = string.Join(", ", identifiedClient.SharedFiles) + "\n";
+
+                SendToClient(stream, filesList);
+                return;
+            }
+            
             SendToClient(stream, "Invalid command, please check spelling!");
-            return;
         }
+    }
+
+    public bool IsValidMessage(string message)
+    {
+        return !message.Contains(" ");
     }
 }
 
