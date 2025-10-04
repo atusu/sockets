@@ -132,24 +132,94 @@ public class Server {
 
             if (message.StartsWith("/share"))
             {
-                SendToClient(stream, "TODO: not implemented");
+                if (!message.Contains(' '))
+                {
+                    SendToClient(stream, "ERR: incorrect command");
+                    return;
+                }
+                
+                var fileName = message.Substring(7);
+                
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    SendToClient(stream, "ERR: no file provided");
+                    return;
+                }
+
+                if (client.SharedFiles.Contains(fileName))
+                {
+                    SendToClient(stream, "ERR: file already shared");
+                    return;
+                }
+                
+                client.SharedFiles.Add(fileName);
+                SendToClient(stream, "OK");
                 return;
             }
             
             if (message.StartsWith("/unshare"))
             {
-                SendToClient(stream, "TODO: not implemented");
+                if (!message.Contains(' '))
+                {
+                    SendToClient(stream, "ERR: incorrect command");
+                    return;
+                }
+                
+                var fileName = message.Substring(9);
+                
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    SendToClient(stream, "ERR: no file provided");
+                    return;
+                }
+                
+                client.SharedFiles.Remove(fileName);
+                SendToClient(stream, "OK");
                 return;
             }
             
             if (message.StartsWith("/list-files"))
             {
-                SendToClient(stream, "TODO: not implemented");
+                if (!message.Contains(' '))
+                {
+                    SendToClient(stream, "ERR: incorrect command");
+                    return;
+                }
+                
+                var userName = message.Substring(12);
+
+                if (string.IsNullOrEmpty(userName))
+                {
+                    SendToClient(stream, "ERR: no user provided");
+                    return;
+                }
+
+                var identifiedClient = clients.FirstOrDefault(c => c.Name == userName);
+                if (identifiedClient == null)
+                {
+                    SendToClient(stream, "ERR: no such user on server");
+                    return;
+                }
+
+                if (identifiedClient.SharedFiles.Count == 0)
+                {
+                    SendToClient(stream, $"INFO: user {userName} shared no files");
+                    return;
+                }
+
+                string filesList = string.Join(", ", identifiedClient.SharedFiles) + "\n";
+
+                SendToClient(stream, filesList);
                 return;
             }
             
             SendToClient(stream, "Invalid command, please check spelling!");
         }
+    }
+
+    public bool IsValidMessage(string message)
+    {
+        return !message.Contains(" ");
     }
 }
 

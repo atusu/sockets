@@ -87,8 +87,9 @@ public class ServerTests
 
         Assert.Equal("OK", HandleClientCommand("/share file1.txt", server, client1));
         Assert.Equal("file1.txt", HandleClientCommand("/list-files Marinela", server, client2));
-
-        Assert.Equal("ERR: wrong command", HandleClientCommand("/share file1.txt file2.txt", server, client1));
+        
+        Assert.Equal("ERR: file already shared", HandleClientCommand("/share file1.txt", server, client1));
+        Assert.Equal("ERR: no file provided", HandleClientCommand("/share ", server, client1));
         
         Assert.Equal("OK", HandleClientCommand("/share file2.txt", server, client1));
         Assert.Equal("file1.txt, file2.txt", HandleClientCommand("/list-files Marinela", server, client2));
