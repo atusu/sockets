@@ -92,18 +92,19 @@ public class ServerTests
 
         Assert.True(server.clients[0].ClientState == ClientState.GET_FILE_DETAILS);  
         Assert.Equal("ERR: size must be a positive number", HandleClientCommand($"-875 {file1.Hash}", server, client1));
-        Assert.Equal("ERR: invalid hash", HandleClientCommand($"{file1.Size} abc", server, client1));
+        Assert.Equal("ERR: invalid hash. Expected a valid MD5 hash of length 32", HandleClientCommand($"{file1.Size} abc", server, client1));
         Assert.Equal("OK", HandleClientCommand($"{file1.Size} {file1.Hash}", server, client1));
         Assert.Equal($"({file1.Name}, {file1.Size}, {file1.Hash})", HandleClientCommand("/list-files Marinela", server, client2));
         
         Assert.Equal("ERR: file already shared", HandleClientCommand($"/share {file1.Name}", server, client1));
         Assert.Equal("ERR: no file provided", HandleClientCommand("/share ", server, client1));
-        
+
         Assert.Equal("OK", HandleClientCommand($"/share {file2.Name}", server, client1));
         Assert.Equal("OK", HandleClientCommand($"{file2.Size} {file2.Hash}", server, client1));
         Assert.Equal($"({file1.Name}, {file1.Size}, {file1.Hash})\n({file2.Name}, {file2.Size}, {file2.Hash})", 
             HandleClientCommand("/list-files Marinela", server, client2));
         
+        Assert.Equal("ERR: file not found", HandleClientCommand("/unshare InexistentFile ", server, client1));
         Assert.Equal("OK", HandleClientCommand("/unshare file1.txt", server, client1));
         Assert.Equal($"({file2.Name}, {file2.Size}, {file2.Hash})", HandleClientCommand("/list-files Marinela", server, client2));
         

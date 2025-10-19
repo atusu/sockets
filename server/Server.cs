@@ -3,12 +3,16 @@ using System.Net.Sockets;
 using System.Text;
 
 namespace server;
-public class Server {
-    private static int SLEEP_TIME = 1000;
-    public List<IClientConnection> clients {get; set;}
-    public int port {get;set;}
 
-    public Server(int port){
+public class Server
+{
+    private static int SLEEP_TIME = 1000;
+    private static int HASH_EXPECTED_LENGTH = 32;
+    public List<IClientConnection> clients { get; set; }
+    public int port { get; set; }
+
+    public Server(int port)
+    {
         this.port = port;
         clients = new List<IClientConnection>();
     }
@@ -27,33 +31,36 @@ public class Server {
         while (true)
         {
             DateTime start = DateTime.Now;
-            Console.WriteLine("[server] Waiting for clients..."); 
+            Console.WriteLine("[server] Waiting for clients...");
 
-            if (server.Pending()) {
+            if (server.Pending())
+            {
                 var tcpClient = server.AcceptTcpClient();
                 clients.Add(new ClientConnection(tcpClient));
                 Console.WriteLine("[server] Added new client :)");
             }
 
             Console.WriteLine($"[server] Checking existing clients... (Total: {clients.Count()})");
-            for(var i=0 ; i < clients.Count(); i++)
+            for (var i = 0; i < clients.Count(); i++)
             {
-                if(!clients[i].IsConnected()) {
+                if (!clients[i].IsConnected())
+                {
                     clients.RemoveAt(i);
                     i--;
                     continue;
                 }
+
                 HandleClient(clients[i]);
             }
-            
+
             Thread.Sleep(SLEEP_TIME);
         }
     }
-    
+
     private void SendToClient(Stream stream, string message)
     {
         // the \n here is needed fot the nc test so we get the message on a new line always
-        message = message[message.Count()-1].ToString() == "\n" ? message : message + "\n";
+        message = message[message.Count() - 1].ToString() == "\n" ? message : message + "\n";
         var responseBytes = Encoding.ASCII.GetBytes(message);
         stream.Write(responseBytes, 0, responseBytes.Length);
     }
@@ -68,11 +75,12 @@ public class Server {
 
     public bool ClientAlreadyExists(List<IClientConnection> clients, string name)
     {
-        foreach (var client in clients) 
+        foreach (var client in clients)
         {
-            if (client.Name == name) 
+            if (client.Name == name)
                 return true;
         }
+
         return false;
     }
 
@@ -80,26 +88,26 @@ public class Server {
     {
         if (!client.DataAvailable())
             return;
-        
+
         var stream = client.GetStream();
         string message = Receive(stream);
         // some clients end a \n as well, like for example the netcat client (integration test). We trim it.
-        message = message[message.Count()-1].ToString() == "\n" ? message.Substring(0, message.Count()-1) : message;
+        message = message[message.Count() - 1].ToString() == "\n" ? message.Substring(0, message.Count() - 1) : message;
         Console.WriteLine($"[server] Handling client message: {message}");
         client.CommandHistory.Add(message);
 
-        if(client.ClientState == ClientState.INIT) 
+        if (client.ClientState == ClientState.INIT)
         {
             SendToClient(stream, message == "/join" ? "OK" : "ERR: you cannot join server using this command.");
-            if (message == "/join") 
+            if (message == "/join")
                 client.ClientState = ClientState.JOINED;
-            
+
             return;
         }
 
-        if(client.ClientState == ClientState.JOINED) 
+        if (client.ClientState == ClientState.JOINED)
         {
-            if (ClientAlreadyExists(clients, message)) 
+            if (ClientAlreadyExists(clients, message))
             {
                 SendToClient(stream, "ERR: name is already on server");
                 return;
@@ -111,32 +119,32 @@ public class Server {
             SendToClient(stream, "OK");
             return;
         }
-        
+
         if (client.ClientState == ClientState.GET_FILE_DETAILS)
         {
             string?[] parts = message.Split(' ');
 
-            if (parts.Count() > 2)
+            if (parts.Count() > 2 || parts.Count() == 1)
             {
-                SendToClient(stream, "ERR: invalid command");
+                SendToClient(stream, "ERR: invalid command. Expected: '/share <filename>'");
                 return;
             }
-                
+
             if (!long.TryParse(parts[0], out var size) || size <= 0)
             {
                 SendToClient(stream, "ERR: size must be a positive number");
                 return;
             }
-                
-            if (parts[1].Length != 32)
+
+            if (parts[1].Length != HASH_EXPECTED_LENGTH)
             {
-                SendToClient(stream, "ERR: invalid hash");
+                SendToClient(stream, "ERR: invalid hash. Expected a valid MD5 hash of length 32");
                 return;
             }
-                
-            var file = client.SharedFiles.FirstOrDefault(f => f.Size == null && string.IsNullOrEmpty(f.Hash));
+
+            var file = GetFileObjectByName(client);
             var hash = parts[1];
-                
+
             file.Size = size;
             file.Hash = hash;
             client.ClientState = ClientState.CONNECTED;
@@ -144,9 +152,9 @@ public class Server {
             return;
         }
 
-        if(client.ClientState == ClientState.CONNECTED)
+        if (client.ClientState == ClientState.CONNECTED)
         {
-            if (message == "/leave") 
+            if (message == "/leave")
             {
                 client.Close();
                 clients.RemoveAll(c => c.Name == client.Name);
@@ -154,7 +162,7 @@ public class Server {
                 return;
             }
 
-            if(message == "/get-list") 
+            if (message == "/get-list")
             {
                 string clientList = string.Join(", ", clients.Select(c => c.Name)) + "\n";
                 SendToClient(stream, clientList);
@@ -169,9 +177,9 @@ public class Server {
                     SendToClient(stream, "ERR: incorrect command");
                     return;
                 }
-                
+
                 var fileName = message.Substring(7);
-                
+
                 if (string.IsNullOrEmpty(fileName))
                 {
                     SendToClient(stream, "ERR: no file provided");
@@ -183,14 +191,14 @@ public class Server {
                     SendToClient(stream, "ERR: file already shared");
                     return;
                 }
-                
+
                 var newFile = new File { Name = fileName, Size = null, Hash = null };
                 client.SharedFiles.Add(newFile);
                 client.ClientState = ClientState.GET_FILE_DETAILS;
                 SendToClient(stream, "OK");
                 return;
             }
-            
+
             if (message.StartsWith("/unshare"))
             {
                 if (!message.Contains(' '))
@@ -198,20 +206,26 @@ public class Server {
                     SendToClient(stream, "ERR: incorrect command");
                     return;
                 }
-                
+
                 var fileName = message.Substring(9);
-                
+
                 if (string.IsNullOrEmpty(fileName))
                 {
                     SendToClient(stream, "ERR: no file provided");
                     return;
                 }
+
+                var removedCount = client.SharedFiles.RemoveAll(f => f.Name == fileName);
+                if (removedCount == 0)
+                {
+                    SendToClient(stream, "ERR: file not found");
+                    return;
+                }
                 
-                client.SharedFiles.RemoveAll(f => f.Name == fileName);
                 SendToClient(stream, "OK");
                 return;
             }
-            
+
             if (message.StartsWith("/list-files"))
             {
                 if (!message.Contains(' '))
@@ -219,7 +233,7 @@ public class Server {
                     SendToClient(stream, "ERR: incorrect command");
                     return;
                 }
-                
+
                 var userName = message.Substring(12);
 
                 if (string.IsNullOrEmpty(userName))
@@ -243,14 +257,18 @@ public class Server {
 
                 string filesList = string.Join("\n", identifiedClient.GetSharedFiles().Select(file =>
                     $"({file.Name}, {file.Size}, {file.Hash})")) + "\n";
-                
+
                 SendToClient(stream, filesList);
                 return;
             }
 
-            
+
             SendToClient(stream, "Invalid command, please check spelling!");
         }
     }
-}
 
+    private File? GetFileObjectByName(IClientConnection client)
+    {
+        return client.SharedFiles.FirstOrDefault(f => f.Size == null && string.IsNullOrEmpty(f.Hash));
+    }
+}
