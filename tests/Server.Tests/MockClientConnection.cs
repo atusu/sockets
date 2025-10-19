@@ -1,5 +1,6 @@
 ﻿using server;
 using System.Text;
+using File = server.File;
 
 namespace Server.Tests;
 
@@ -11,7 +12,7 @@ public class MockClientConnection : IClientConnection
     public string Name { get; set; }
     public ClientState ClientState { get; set; } = ClientState.INIT;
     public List<string> CommandHistory { get; set; } = new();
-    public List<string> SharedFiles { get; set; } = new();
+    public List<File> SharedFiles { get; set; } = new();
 
     public void SetInput(string input)
     {
@@ -30,6 +31,10 @@ public class MockClientConnection : IClientConnection
         return Encoding.ASCII.GetString(_writeStream.ToArray()).Trim();
     }
 
+    public List<File> GetSharedFiles()
+    {
+        return SharedFiles.Where(f => f.Size!= null || f.Hash != null).ToList();
+    }
     // Helper to combine read/write into one stream
     private class CombinedStream : Stream
     {
